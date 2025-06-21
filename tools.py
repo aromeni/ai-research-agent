@@ -57,6 +57,54 @@ def wiki_tool(topic: str) -> str:
     return f"Page not found for topic: {topic}"
 
 
+
+
+
+from langchain.tools import tool
+import wikipedia
+from duckduckgo_search import DDGS
+import requests, feedparser, json
+from typing import List
+
+
+# --- existing wiki_tool & save_tool stay as-is ---------------------------
+
+
+@tool
+def ddg_search_tool(query: str, max_results: int = 5) -> List[str]:
+    """DuckDuckGo web search – returns a list of result URLs."""
+    with DDGS() as ddg:
+        results = (
+            r["href"]
+            for r in ddg.text(query, safesearch="moderate", max_results=max_results)
+        )
+    return list(results)
+
+
+@tool
+def arxiv_tool(topic: str, max_results: int = 3) -> List[str]:
+    """Return arXiv paper titles + links for *topic*."""
+    url = (
+        "https://export.arxiv.org/api/query?"
+        f"search_query=all:{topic.replace(' ', '+')}&start=0&max_results={max_results}"
+    )
+    feed = feedparser.parse(requests.get(url, timeout=10).text)
+    papers = [
+        f"{entry.title.strip()} – {entry.link}"
+        for entry in feed.entries[:max_results]
+    ]
+    return papers
+
+
+@tool
+def news_tool(query: str, max_results: int = 5) -> List[str]:
+    """Very simple news RSS search via DuckDuckGo."""
+    rss = f"https://duckduckgo.com/rss/news?q={query.replace(' ', '+')}"
+    items = feedparser.parse(rss).entries[:max_results]
+    return [f"{it.title} – {it.link}" for it in items]
+
+
+
 # ----------------------------------------------------------------------
 # 2.  Save-to-disk tool
 # ----------------------------------------------------------------------
