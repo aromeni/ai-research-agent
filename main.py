@@ -23,14 +23,18 @@ parser = PydanticOutputParser(pydantic_object=ResearchResponse)
 
 prompt = ChatPromptTemplate.from_messages(
     [
-        ("system", "You are a research assistant. Answer like this:\n{format_instructions}"),
+        ("system",
+         "You are a helpful research assistant. "
+         "Use tools if needed. Answer using:\n{format_instructions}"),
         ("human", "{query}"),
+        ("placeholder", "{agent_scratchpad}"),
     ]
 ).partial(format_instructions=parser.get_format_instructions())
 
 tools = [wiki_tool, save_tool]
 
 agent = create_tool_calling_agent(llm=llm, prompt=prompt, tools=tools)
+
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
 query = input("What would you like me to research? ")
